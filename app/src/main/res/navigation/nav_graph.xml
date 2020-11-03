@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/FlightListFragment">
+
+    <fragment
+        android:id="@+id/FlightListFragment"
+        android:name="com.deenoo.airport.flights.FlightListFragment"
+        android:label="@string/flight_list_fragment_label"
+        tools:layout="@layout/fragment_flight_list">
+
+        <action
+            android:id="@+id/action_FlightListFragment_to_FlightEditFragment"
+            app:destination="@id/FlightEditFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/FlightEditFragment"
+        android:name="com.deenoo.airport.flight.FlightEditFragment"
+        android:label="@string/flight_edit_fragment_label"
+        tools:layout="@layout/fragment_flight_edit">
+
+        <action
+            android:id="@+id/action_FlightEditFragment_to_FlightListFragment"
+            app:destination="@id/FlightListFragment" />
+    </fragment>
+</navigation>
