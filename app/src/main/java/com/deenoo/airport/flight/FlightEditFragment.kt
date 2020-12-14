@@ -12,24 +12,18 @@ import androidx.lifecycle.observe
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.deenoo.R
+import com.deenoo.airport.data.Flight
 import com.deenoo.core.TAG
 import kotlinx.android.synthetic.main.fragment_flight_edit.*
 
 class FlightEditFragment : Fragment() {
-    companion object{
+    companion object {
         const val FLIGHT_ID = "FLIGHT_ID"
-        const val NAME = "NAME"
-        const val NO_PASSENGERS = "NO_PASSENGERS"
-        const val DATE_OF_FLIGHT = "DATE_OF_FLIGHT"
-        const val IS_FULL = "IS_FULL"
     }
 
     private lateinit var viewModel: FlightEditViewModel
     private var flightId: String? = null
-    private var name: String? = null
-    private var noPassengers: Int? = null
-    private var dateOfFlight: String? = null
-    private var isFull: Boolean? = null
+    private var flight: Flight? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,19 +32,6 @@ class FlightEditFragment : Fragment() {
             if (it.containsKey(FLIGHT_ID)) {
                 flightId = it.getString(FLIGHT_ID).toString()
             }
-            if (it.containsKey(NAME)) {
-                name = it.getString(NAME).toString()
-            }
-            if (it.containsKey(NO_PASSENGERS)) {
-                noPassengers = it.getInt(NO_PASSENGERS)
-            }
-            if (it.containsKey(DATE_OF_FLIGHT)) {
-                dateOfFlight = it.getString(DATE_OF_FLIGHT).toString()
-            }
-            if (it.containsKey(IS_FULL)) {
-                isFull = it.getBoolean(IS_FULL)
-            }
-
         }
     }
 
@@ -66,12 +47,12 @@ class FlightEditFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         Log.v(TAG, "onViewCreated")
         flight_name.setText(flightId)
-        flight_number_of_passengers.setText(noPassengers.toString())
-        if (isFull != null)
-            flight_is_full.isChecked = isFull!!
+        flight_number_of_passengers.setText(flight?.noPassengers.toString())
+        if (flight?.isFull != null)
+            flight_is_full.isChecked = flight?.isFull!!
         else
             flight_is_full.isChecked = true
-        flight_date.setText(dateOfFlight)
+        flight_date.setText(flight?.dateOfFlight)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -80,23 +61,19 @@ class FlightEditFragment : Fragment() {
         setupViewModel()
         fab.setOnClickListener {
             Log.v(TAG, "save item")
-            viewModel.saveOrUpdateFlight(
-                flight_name.text.toString(),
-                flight_is_full.isChecked,
-                flight_number_of_passengers.text.toString().toInt(),
-                flight_date.text.toString())
+            val fl = flight
+            if (fl != null) {
+                fl.name = flight_name.text.toString()
+                fl.isFull = flight_is_full.isChecked
+                fl.noPassengers = flight_number_of_passengers.text.toString().toInt()
+                fl.dateOfFlight = flight_date.text.toString()
+                viewModel.saveOrUpdateFlight(fl)
+            }
         }
     }
+
     private fun setupViewModel() {
         viewModel = ViewModelProvider(this).get(FlightEditViewModel::class.java)
-        viewModel.flight.observe(viewLifecycleOwner) { flight ->
-            Log.v(TAG, "update flight")
-            flight_name.setText(flight.name)
-            flight_date.setText(flight.dateOfFlight)
-            flight_is_full.isChecked = flight.isFull
-            flight_number_of_passengers.setText(flight.noPassengers.toString())
-
-        }
         viewModel.fetching.observe(viewLifecycleOwner) { fetching ->
             Log.v(TAG, "update fetching")
             progress.visibility = if (fetching) View.VISIBLE else View.GONE
@@ -118,8 +95,19 @@ class FlightEditFragment : Fragment() {
             }
         })
         val id = flightId
-        if (id != null) {
-            viewModel.loadFlight(id)
+        if (id == null) {
+            flight = Flight("", "", "", 0, "", false)
+        } else {
+            viewModel.getFlightById(id).observe(viewLifecycleOwner) {
+                Log.v(TAG, "update flight")
+                if (it != null) {
+                    flight = it
+                    flight_name.setText(flight!!.name)
+                    flight_date.setText(flight!!.dateOfFlight)
+                    flight_number_of_passengers.setText(flight!!.noPassengers)
+                    flight_is_full.isChecked = flight!!.isFull
+                }
+            }
         }
     }
 }

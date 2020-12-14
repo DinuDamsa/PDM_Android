@@ -11,6 +11,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
 import androidx.navigation.fragment.findNavController
 import com.deenoo.R
+import com.deenoo.authenticate.data.AuthenticateRepository
+import com.deenoo.core.Constants
 import com.deenoo.core.TAG
 import kotlinx.android.synthetic.main.fragment_flight_list.*
 
@@ -33,10 +35,21 @@ class FlightListFragment: Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         Log.v(TAG, "onActivityCreated")
+        if (Constants.instance()?.fetchValueString("token")==null) {
+            Log.i("FlightListFragment", "User not logged in")
+            findNavController().navigate(R.id.fragment_login)
+            return;
+        }
+
         setupFlightsList()
         fab.setOnClickListener {
             Log.v(TAG, "add new item")
-            findNavController().navigate(R.id.FlightEditFragment) // modificat
+            findNavController().navigate(R.id.FlightEditFragment)
+        }
+        logout.setOnClickListener{
+            Log.v(TAG, "LOGOUT")
+            AuthenticateRepository.logout()
+            findNavController().navigate(R.id.fragment_login)
         }
     }
 

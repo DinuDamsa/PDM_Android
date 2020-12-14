@@ -31,11 +31,7 @@ class FlightListAdapter (
         onFlightClick = View.OnClickListener { view ->
             val flight = view.tag as Flight
             fragment.findNavController().navigate(R.id.FlightEditFragment, Bundle().apply {
-                putString(FlightEditFragment.FLIGHT_ID, flight.id)
-                putString(FlightEditFragment.NAME, flight.name)
-                putBoolean(FlightEditFragment.IS_FULL, flight.isFull)
-                putInt(FlightEditFragment.NO_PASSENGERS, flight.noPassengers)
-                putString(FlightEditFragment.DATE_OF_FLIGHT, flight.dateOfFlight)
+                putString(FlightEditFragment.FLIGHT_ID, flight._id)
             })
         }
     }

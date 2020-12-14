@@ -1,71 +1,74 @@
 package com.deenoo.airport.flight
 
+import android.app.Application
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.deenoo.airport.data.Flight
 import com.deenoo.airport.data.FlightRepository
+import com.deenoo.airport.data.local.FlightDatabase
 import com.deenoo.core.TAG
 import kotlinx.coroutines.launch
+import java.util.*
+import com.deenoo.core.Result
 
-class FlightEditViewModel: ViewModel() {
-    private val mutableFlight = MutableLiveData<Flight>().apply { value = Flight("", "",
-        0,
-        "2020-10-10 20:02",
-        false) }
+class FlightEditViewModel(app: Application): AndroidViewModel(app) {
     private val mutableFetching = MutableLiveData<Boolean>().apply { value = false }
     private val mutableCompleted = MutableLiveData<Boolean>().apply { value = false }
     private val mutableException = MutableLiveData<Exception>().apply { value = null }
 
-    val flight: LiveData<Flight> = mutableFlight
     val fetching: LiveData<Boolean> = mutableFetching
     val fetchingError: LiveData<Exception> = mutableException
     val completed: LiveData<Boolean> = mutableCompleted
 
-    fun loadFlight(flightId: String) {
-        viewModelScope.launch {
-            Log.i(TAG, "loadFlight...")
-            mutableFetching.value = true
-            mutableException.value = null
-            try {
-                mutableFlight.value = FlightRepository.loadFlight(flightId)
-                Log.i(TAG, "loadFlight succeeded")
-                mutableFetching.value = false
-            } catch (e: Exception) {
-                Log.w(TAG, "loadFlight failed", e)
-                mutableException.value = e
-                mutableFetching.value = false
-            }
-        }
+    private val flightRepository: FlightRepository
+
+    init {
+        val flightDAO = FlightDatabase.getDatabase(app, viewModelScope).flightDao()
+        flightRepository = FlightRepository(flightDAO)
     }
 
-    fun saveOrUpdateFlight(name: String, isFull: Boolean, noPassengers: Int, dateOfFlight:String) {
+    fun getFlightById(flightId: String): LiveData<Flight> {
+        Log.v(TAG, "getFlightById...")
+        return flightRepository.loadFlight(flightId)
+    }
+
+    fun random(): String {
+        val generator = Random()
+        val randomStringBuilder = StringBuilder()
+        val randomLength: Int = generator.nextInt(20)
+        var tempChar: Char
+        for (i in 0 until randomLength) {
+            tempChar = ((generator.nextInt(96) + 32).toChar())
+            randomStringBuilder.append(tempChar)
+        }
+        return randomStringBuilder.toString()
+    }
+
+    fun saveOrUpdateFlight(flight: Flight) {
         viewModelScope.launch {
-            Log.i(TAG, "saveOrUpdateFlight...");
-            val flight = mutableFlight.value ?: return@launch
-            flight.name = name
-            flight.noPassengers = noPassengers
-            flight.dateOfFlight = dateOfFlight
-            flight.isFull = isFull
+            Log.v(TAG, "saveOrUpdateFlight...")
             mutableFetching.value = true
             mutableException.value = null
-            try {
-                if (flight.id.isNotEmpty()) {
-                    mutableFlight.value = FlightRepository.update(flight)
-                } else {
-                    mutableFlight.value = FlightRepository.save(flight)
+            val result: Result<Flight> = if (flight._id.isNotEmpty()) {
+                flightRepository.update(flight)
+            } else {
+                flight._id = random()
+                flightRepository.save(flight)
+            }
+            when (result) {
+                is Result.Success -> {
+                    Log.d(TAG, "saveOrUpdateFlight succeeded");
                 }
-                Log.i(TAG, "saveOrUpdateFlight succeeded");
-                mutableCompleted.value = true
-                mutableFetching.value = false
-            } catch (e: Exception) {
-                Log.w(TAG, "saveOrUpdateFlight failed", e);
-                mutableException.value = e
-                mutableFetching.value = false
+                is Result.Error -> {
+                    Log.w(TAG, "saveOrUpdateFlight failed", result.exception);
+                    mutableException.value = result.exception
+                }
             }
+            mutableCompleted.value = true
+            mutableFetching.value = false
         }
     }
-
 }

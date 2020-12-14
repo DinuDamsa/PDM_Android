@@ -6,7 +6,13 @@
     <string name="flight_edit_fragment_label">Second Fragment</string>
     <string name="edit">Edit</string>
     <string name="Cancel">Cancel</string>
-
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="username">Username</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must not be empty</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign In</string>
     <string name="flight_list_fragment">Flight list fragment</string>
     <string name="flight_edit_fragment">Flight edit fragment</string>
 </resources>

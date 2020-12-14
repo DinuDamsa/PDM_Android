@@ -1,46 +1,64 @@
 package com.deenoo.airport.data
 
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
+import com.deenoo.airport.data.local.FlightDAO
 import com.deenoo.airport.data.remote.FlightApi
+import com.deenoo.core.Constants
 import com.deenoo.core.TAG
+import java.lang.Exception
+import com.deenoo.core.Result
 
-object FlightRepository {
-    private var flights: MutableList<Flight>? = null
+class FlightRepository(private val flightDAO: FlightDAO) {
 
-    suspend fun loadAll(): List<Flight>{
-        Log.i(TAG, "loadAll")
-        if (flights != null){
-            return flights as List<Flight>
+//    val flights = flightDAO.getAll()
+    val flights = MediatorLiveData<List<Flight>>().apply { postValue(emptyList()) }
+
+    suspend fun refresh(): Result<Boolean>{
+        Log.i(TAG, "getAll")
+        return try {
+            val flightApi = FlightApi.service.getAll()
+            flights.value = flightApi
+            for (plant in flightApi) {
+                flightDAO.insert(plant)
+            }
+            Result.Success(true)
+        } catch (e: Exception) {
+            val userId = Constants.instance()?.fetchValueString("_id")
+            flights.addSource(flightDAO.getAllByUserId(userId!!)) {
+                flights.value = it
+            }
+            Result.Error(e)
         }
-        flights = mutableListOf()
-        println()
-        val flightList = FlightApi.service.getAll()
-        flights?.addAll(flightList);
-        return flights as List<Flight>
-    }
-    suspend fun loadFlight(flightId: String): Flight {
-        Log.i(TAG, "load")
-        val flight = flights?.find { it.id == flightId }
-        if (flight != null) {
-            return flight
-        }
-        return FlightApi.service.getOne(flightId)
     }
 
-    suspend fun save(flight: Flight): Flight {
+    fun loadFlight(flightId: String): LiveData<Flight> {
+        Log.i(TAG, "loadFlight")
+
+        return flightDAO.getById(flightId)
+    }
+
+    suspend fun save(flight: Flight): Result<Flight> {
         Log.i(TAG, "save")
-        val createdItem = FlightApi.service.create(flight)
-        flights?.add(createdItem)
-        return createdItem
+        try {
+            val updatedFlight = FlightApi.service.create(flight)
+            flightDAO.insert(flight)
+//            flightDAO.update(flight)
+            return Result.Success(updatedFlight)
+        } catch (e: Exception) {
+            return Result.Error(e)
+        }
     }
 
-    suspend fun update(flight: Flight): Flight {
+    suspend fun update(flight: Flight): Result<Flight> {
         Log.i(TAG, "update")
-        val updatedFlight = FlightApi.service.update(flight.id, flight)
-        val flightIndex = flights?.indexOfFirst { it.id == flight.id }
-        if (flightIndex != null) {
-            flights?.set(flightIndex, updatedFlight)
+        try {
+            val updatedFlight = FlightApi.service.update(flight._id, flight)
+            flightDAO.update(flight)
+            return Result.Success(updatedFlight)
+        } catch (e: Exception) {
+            return Result.Error(e)
         }
-        return updatedFlight
     }
 }

@@ -6,6 +6,12 @@
     app:startDestination="@id/FlightListFragment">
 
     <fragment
+        android:id="@+id/fragment_login"
+        android:name="com.deenoo.authenticate.login.LoginFragment"
+        android:label="@string/login"
+        tools:layout="@layout/fragment_login" />
+
+    <fragment
         android:id="@+id/FlightListFragment"
         android:name="com.deenoo.airport.flights.FlightListFragment"
         android:label="@string/flight_list_fragment_label"
